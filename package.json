@@ -13,7 +13,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
     "@google/generative-ai": "^0.24.1",
+    "@mediapipe/tasks-genai": "^0.10.26",
     "idb": "^8.0.3",
+    "idb-keyval": "^6.2.2",
     "lucide-react": "^0.563.0",
     "openai": "^6.17.0",
     "react": "^19.2.0",

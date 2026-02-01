@@ -43,6 +43,14 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
             { id: 'claude-4.5-haiku', name: 'Claude 4.5 Haiku' },
             { id: 'claude-3-5-sonnet-latest', name: 'Claude 3.5 Sonnet' },
         ]
+    },
+    mediapipe: {
+        id: 'mediapipe',
+        name: 'MediaPipe (On-Device)',
+        placeholderApiKey: 'hf_... (Hugging Face Token)',
+        models: [
+            { id: 'gemma3-12b-it-int4-web.task', name: 'Gemma 3 12B IT (Int4)' }
+        ]
     }
 };
 

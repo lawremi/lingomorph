@@ -1,5 +1,5 @@
 export interface UserSettings {
-    llmProvider: 'google' | 'openai' | 'anthropic';
+    llmProvider: 'google' | 'openai' | 'anthropic' | 'mediapipe';
     ankiConnectUrl: string;
     targetLanguage: string;
     nativeLanguage: string;
@@ -34,7 +34,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
     providers: {
         google: { apiKey: '', model: 'gemini-3-flash-preview' },
         openai: { apiKey: '', model: 'gpt-5-mini' },
-        anthropic: { apiKey: '', model: 'claude-4.5-sonnet' }
+        anthropic: { apiKey: '', model: 'claude-4.5-sonnet' },
+        mediapipe: { apiKey: '', model: 'gemma-3-12b-it-int4-web.task' }
     }
 };
 

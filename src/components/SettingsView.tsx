@@ -3,6 +3,7 @@ import { useSettings } from '../context/SettingsContext';
 import { PROVIDERS } from '../config/models';
 import { AnkiConnect } from '../services/anki';
 import { VocabularySyncService } from '../services/sync';
+import { ModelManager } from '../services/mediapipe/modelManager';
 
 export const SettingsView: React.FC = () => {
     const { settings, updateSettings } = useSettings();
@@ -11,6 +12,10 @@ export const SettingsView: React.FC = () => {
     const [ankiWarning, setAnkiWarning] = useState<string | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [availableFields, setAvailableFields] = useState<string[]>([]);
+
+    // MediaPipe State
+    const [modelCached, setModelCached] = useState(false);
+    const [modelSize, setModelSize] = useState<string | null>(null);
 
     // Initial load of Anki models
     useEffect(() => {
@@ -59,6 +64,23 @@ export const SettingsView: React.FC = () => {
         };
         loadFields();
     }, [settings.ankiConnectUrl, settings.ankiNoteType]);
+
+    useEffect(() => {
+        const checkModel = async () => {
+            if (settings.llmProvider === 'mediapipe') {
+                const cached = await ModelManager.isModelCached();
+                setModelCached(cached);
+                if (cached) {
+                    const size = await ModelManager.getModelSize();
+                    setModelSize(size);
+                } else {
+                    setModelSize(null);
+                }
+            }
+        };
+        checkModel();
+    }, [settings.llmProvider]);
+
 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -353,6 +375,66 @@ export const SettingsView: React.FC = () => {
                         const activeProvider = PROVIDERS[settings.llmProvider];
                         if (!activeProvider) return null;
 
+                        if (activeProvider.id === 'mediapipe') {
+                            const providerSettings = settings.providers['mediapipe'] || { apiKey: '', model: '' };
+
+                            return (
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm text-slate-400">Hugging Face Access Token</label>
+                                        <input
+                                            value={providerSettings.apiKey}
+                                            onChange={(e) => handleProviderUpdate('mediapipe', 'apiKey', e.target.value)}
+                                            type="password"
+                                            placeholder="hf_..."
+                                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
+                                        />
+                                        <p className="text-[10px] text-slate-500">Required for model updates/downloads. Saved locally.</p>
+                                    </div>
+
+                                    <div className="text-sm text-slate-400">
+                                        Status: <span className={modelCached ? 'text-green-400' : 'text-yellow-400'}>
+                                            {modelCached ? `Ready (Cached: ${modelSize || 'Unknown'})` : 'Not Available'}
+                                        </span>
+                                    </div>
+
+                                    {modelCached ? (
+                                        <div className="space-y-4">
+                                            <div className="p-3 bg-slate-900/50 rounded border border-slate-700/50">
+                                                <p className="text-xs text-slate-400">
+                                                    Model is stored locally. Adaptations run on-device.
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm("Delete local model? You will need to re-download it to use MediaPipe.")) {
+                                                        await ModelManager.clearCache();
+                                                        setModelCached(false);
+                                                        alert("Model deleted. Reloading...");
+                                                        window.location.reload();
+                                                    }
+                                                }}
+                                                className="text-xs text-red-400 hover:text-red-300 underline"
+                                            >
+                                                Delete Model & Re-run Setup
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="p-3 bg-yellow-400/10 border border-yellow-400/20 rounded-lg text-sm text-yellow-200">
+                                            <p>Model setup is required. The Quick Start Wizard should launch automatically.</p>
+                                            <button
+                                                onClick={() => window.location.reload()}
+                                                className="mt-2 text-xs underline hover:text-white"
+                                            >
+                                                Reload to launch Wizard
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+
                         // Access nested setting safely
                         const providerSettings = settings.providers[activeProvider.id] || { apiKey: '', model: '' };
 
@@ -385,7 +467,7 @@ export const SettingsView: React.FC = () => {
                     })()}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

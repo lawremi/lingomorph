@@ -4,18 +4,47 @@ import { SettingsView } from './SettingsView';
 import { AdaptationView } from './AdaptationView';
 import { ProgressBar } from './ProgressBar';
 import { useSettings } from '../context/SettingsContext';
+import { QuickStartWizard } from './QuickStartWizard';
+import { ModelManager } from '../services/mediapipe/modelManager';
 
 type Tab = 'adapt' | 'settings';
 
 export const SidePanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('adapt');
-    const { settings } = useSettings();
+    const { settings, loading } = useSettings();
     const [progress, setProgress] = useState({ date: '', count: 0 });
     const [streak, setStreak] = useState({ count: 0, lastMetDate: '' });
+    const [showWizard, setShowWizard] = useState(false);
+    const [checkingConfig, setCheckingConfig] = useState(true);
 
     const [syncing, setSyncing] = useState(false);
     const { updateSettings } = useSettings();
 
+    useEffect(() => {
+        if (loading) return; // Wait for settings to load
+
+        const checkConfig = async () => {
+            if (settings.llmProvider === 'mediapipe') {
+                const cached = await ModelManager.isModelCached();
+                if (!cached) {
+                    setShowWizard(true);
+                } else {
+                    setShowWizard(false);
+                }
+            } else {
+                const apiKey = settings.providers[settings.llmProvider]?.apiKey;
+                if (!apiKey) {
+                    setShowWizard(true);
+                } else {
+                    setShowWizard(false);
+                }
+            }
+            setCheckingConfig(false);
+        };
+        checkConfig();
+    }, [settings.llmProvider, settings.providers, loading]);
+
+    // 3. Stats & Sync Effect
     useEffect(() => {
         const loadProgress = async () => {
             const today = new Date().toDateString();
@@ -97,7 +126,11 @@ export const SidePanel: React.FC = () => {
             chrome.storage.onChanged.removeListener(listener);
             clearTimeout(timer);
         };
-    }, []);
+    }, []); // Empty dependency array means this runs once on mount
+
+    // CONDITIONAL RENDERING AFTER ALL HOOKS
+    if (checkingConfig) return <div className="flex h-screen items-center justify-center bg-slate-900 text-slate-500">Loading...</div>;
+    if (showWizard) return <QuickStartWizard onComplete={() => setShowWizard(false)} />;
 
     return (
         <div className="flex flex-col h-screen bg-slate-900 text-slate-100">
@@ -111,6 +144,7 @@ export const SidePanel: React.FC = () => {
                     {syncing && <span className="text-[10px] text-violet-400 animate-pulse">Syncing...</span>}
                 </div>
 
+                {/* Rest of Header */}
                 <div className="flex flex-col gap-1 w-full">
                     <div className="flex justify-between items-center text-xs text-slate-400">
                         <div className="flex items-center gap-3">
@@ -138,7 +172,7 @@ export const SidePanel: React.FC = () => {
                 {activeTab === 'settings' && <SettingsView />}
             </main>
 
-            {/* Basic Tab Bar */}
+            {/* Tab Bar */}
             <nav className="flex items-center justify-around p-2 border-t border-slate-800 bg-slate-900">
                 <button
                     onClick={() => setActiveTab('adapt')}
