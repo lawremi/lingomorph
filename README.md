@@ -38,7 +38,7 @@ The web offers an infinite supply of text, but finding content that matches your
 ### Installation Options
 
 #### Option 1: Download Release (Recommended)
-1.  Go to the [Releases](https://github.com/yourusername/lingomorph/releases) page.
+1.  Go to the [Releases](https://github.com/lawremi/lingomorph/releases) page.
 2.  Download the latest `lingomorph-extension.zip`.
 3.  Unzip the file.
 4.  Proceed to **Loading into Chrome**.
