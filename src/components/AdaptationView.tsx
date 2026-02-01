@@ -112,6 +112,26 @@ export const AdaptationView: React.FC = () => {
             progress.count += 1;
             await chrome.storage.local.set({ dailyProgress: progress });
 
+            // Streak Logic
+            if (progress.count >= settings.dailyGoal) {
+                const streakResult = await chrome.storage.local.get('streak');
+                let streak = streakResult.streak as { count: number, lastMetDate: string } | undefined;
+                const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+                if (!streak) {
+                    streak = { count: 1, lastMetDate: today };
+                } else if (streak.lastMetDate !== today) {
+                    if (streak.lastMetDate === yesterday) {
+                        streak.count += 1;
+                        streak.lastMetDate = today;
+                    } else {
+                        streak = { count: 1, lastMetDate: today };
+                    }
+                }
+
+                await chrome.storage.local.set({ streak });
+            }
+
         } catch (e: any) {
             console.error(e);
             let msg = e.message || 'Adaptation failed. Unknown error.';
