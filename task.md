@@ -30,6 +30,8 @@
 - [x] Implement "Add to Anki" Feature for New Words <!-- id: 21 -->
 - [x] Implement Per-Adaptation Chat Thread ("Ask AI") <!-- id: 22 -->
 - [x] Remove Standalone Chat View <!-- id: 23 -->
+- [x] Implement Configurable Anki Note Type & Formatting <!-- id: 24 -->
+- [x] Implement Immediate Anki Feedback (Blue Color & DB Update) <!-- id: 25 -->
 
 ## Verification
 - [x] Verify End-to-End flow with mocked LLM/Anki <!-- id: 15 -->

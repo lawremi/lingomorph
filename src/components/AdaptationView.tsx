@@ -105,7 +105,7 @@ export const AdaptationView: React.FC = () => {
         setHistory(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleAddAnki = async (word: string, lemma: string, definition?: string) => {
+    const handleAddAnki = async (lemma: string, definition?: string) => {
         try {
             const { AnkiConnect } = await import('../services/anki');
             const anki = new AnkiConnect(settings.ankiConnectUrl);
@@ -114,12 +114,50 @@ export const AdaptationView: React.FC = () => {
 
             if (!targetDeck) throw new Error('No deck found');
 
-            // Basic Note Type handling - assuming "Basic" or similar for now
-            // In a real app we'd let user map model fields
-            await anki.addNote(targetDeck, 'Basic', {
-                'Front': lemma,
-                'Back': `${definition || ''} <br><small>(${word})</small>`
-            }, ['lingomorph']);
+            // Use configured note type (defaulting to Basic if not set)
+            const noteType = settings.ankiNoteType || 'Basic';
+            const frontField = settings.ankiFrontField || 'Front';
+            const backField = settings.ankiBackField || 'Back';
+
+            const fields = {
+                [frontField]: lemma,
+                [backField]: definition || ''
+            };
+
+            const result = await anki.addNote(targetDeck, noteType, fields, ['lingomorph']);
+
+            // Assume result is the note ID (AnkiConnect returns ID)
+            const noteId = result;
+
+            // Update local state to 'new' (Blue) immediately
+            setHistory(prev => prev.map((item, _) => {
+                // Optimization: only update if this item contains the word (checking lemma)
+                // Or we scan all items to be safe
+                return {
+                    ...item,
+                    words: item.words.map(w => {
+                        if (w.lemma === lemma) {
+                            return { ...w, status: 'new', id: noteId, definition: definition || w.definition };
+                        }
+                        return w;
+                    })
+                };
+            }));
+
+            // Persist to DB so we don't need to re-sync immediately
+            try {
+                const { saveVocab } = await import('../services/db');
+                await saveVocab([{
+                    id: noteId,
+                    word: lemma, // using lemma as key word
+                    lemma: lemma,
+                    status: 'new',
+                    definition: definition,
+                    lastSynced: Date.now()
+                }]);
+            } catch (dbErr) {
+                console.error("Failed to save to local DB", dbErr);
+            }
 
             alert(`Added "${lemma}" to Anki deck "${targetDeck}"!`);
         } catch (e: any) {
@@ -229,7 +267,7 @@ Answer the user's question about the text, vocabulary, grammar, or culture. Keep
                         </div>
 
                         <DifficultyIndicator
-                            newWordsCount={item.words.filter(w => w.status === 'new').length}
+                            newWordsCount={item.words.filter(w => w.status === 'new' || w.status === 'untracked').length}
                             totalWords={item.words.length}
                         />
 

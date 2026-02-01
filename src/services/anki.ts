@@ -40,6 +40,14 @@ export class AnkiConnect {
         return this.invoke('deckNames');
     }
 
+    async getModelNames(): Promise<string[]> {
+        return this.invoke('modelNames');
+    }
+
+    async getModelFieldNames(modelName: string): Promise<string[]> {
+        return this.invoke('modelFieldNames', { modelName });
+    }
+
     async addNote(deckName: string, modelName: string, fields: Record<string, string>, tags: string[] = []) {
         return this.invoke('addNote', {
             note: {

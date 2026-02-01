@@ -10,7 +10,7 @@ interface InteractiveWordProps {
     isActive?: boolean;
     onHover?: (active: boolean) => void;
     onClick: (word: string, lemma: string) => void;
-    onAddAnki?: (word: string, lemma: string, definition?: string) => void;
+    onAddAnki?: (lemma: string, definition?: string) => void;
 }
 
 export const InteractiveWord: React.FC<InteractiveWordProps> = ({
@@ -32,9 +32,12 @@ export const InteractiveWord: React.FC<InteractiveWordProps> = ({
 
     const getStatusColor = () => {
         switch (status) {
-            case 'new': return 'text-red-400 border-b border-red-400/30 bg-red-400/5';
-            case 'learning': return 'text-yellow-400 border-b border-yellow-400/30 bg-yellow-400/5';
-            case 'review': return 'text-orange-400 border-b border-orange-400/30 bg-orange-400/5';
+            case 'untracked': return 'text-slate-400 border-b border-indigo-400/30 hover:bg-white/5'; // Gray with subtle hint
+            case 'new': return 'text-blue-400 border-b border-blue-400/30 bg-blue-400/5'; // Anki New
+            case 'learning': return 'text-red-400 border-b border-red-400/30 bg-red-400/5'; // Anki Learning
+            case 'review': return 'text-green-400 border-b border-green-400/30 bg-green-400/5'; // Anki Review
+            case 'suspended': return 'text-yellow-400 border-b border-yellow-400/30 bg-yellow-400/5'; // Anki Suspended
+            case 'buried': return 'text-amber-700 border-b border-amber-700/30 bg-amber-700/5'; // Anki Buried
             case 'known': return 'text-slate-200';
             default: return 'text-slate-200';
         }
@@ -82,12 +85,12 @@ export const InteractiveWord: React.FC<InteractiveWordProps> = ({
 
                     {definition && <div className="text-slate-400 max-w-[200px] whitespace-normal break-words">{definition}</div>}
 
-                    {(status === 'new' || status === 'learning') && onAddAnki && (
+                    {status === 'untracked' && onAddAnki && (
                         <button
                             className="mt-1 w-full text-[10px] bg-violet-600 hover:bg-violet-500 text-white px-2 py-1 rounded transition-colors flex items-center justify-center gap-1 pointer-events-auto"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onAddAnki(word, lemma, definition);
+                                onAddAnki(lemma, definition);
                             }}
                         >
                             <span className="font-bold">+</span> Add to Anki

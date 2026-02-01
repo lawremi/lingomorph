@@ -4,6 +4,9 @@ export interface UserSettings {
     targetLanguage: string;
     nativeLanguage: string;
     enableLLMNormalization: boolean;
+    ankiNoteType: string;
+    ankiFrontField: string;
+    ankiBackField: string;
     providers: Record<string, ProviderSettings>;
 }
 
@@ -18,6 +21,9 @@ export const DEFAULT_SETTINGS: UserSettings = {
     targetLanguage: 'Spanish',
     nativeLanguage: 'English',
     enableLLMNormalization: false,
+    ankiNoteType: 'Basic',
+    ankiFrontField: 'Front',
+    ankiBackField: 'Back',
     providers: {
         google: { apiKey: '', model: 'gemini-3-flash-preview' },
         openai: { apiKey: '', model: 'gpt-5-mini' },
@@ -27,7 +33,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
 
 export interface WordStatus {
     word: string;
-    status: 'new' | 'learning' | 'review' | 'known';
+    status: 'untracked' | 'new' | 'learning' | 'review' | 'known' | 'suspended' | 'buried';
     definition?: string;
     id?: number; // Anki Note ID
 }

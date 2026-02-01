@@ -1,15 +1,98 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { PROVIDERS } from '../config/models';
+import { AnkiConnect } from '../services/anki';
+import { VocabularySyncService } from '../services/sync';
 
 export const SettingsView: React.FC = () => {
     const { settings, updateSettings } = useSettings();
-    const [syncing, setSyncing] = React.useState(false);
-    const [syncMsg, setSyncMsg] = React.useState('');
+    const [syncing, setSyncing] = useState(false);
+    const [syncMsg, setSyncMsg] = useState('');
+    const [ankiWarning, setAnkiWarning] = useState<string | null>(null);
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [availableFields, setAvailableFields] = useState<string[]>([]);
+
+    // Initial load of Anki models
+    useEffect(() => {
+        const loadModels = async () => {
+            const anki = new AnkiConnect(settings.ankiConnectUrl);
+            try {
+                const models = await anki.getModelNames();
+                setAvailableModels(models);
+            } catch (e) {
+                console.error("Failed to load Anki models on mount", e);
+            }
+        };
+        loadModels();
+    }, [settings.ankiConnectUrl]);
+
+    // Load fields when Note Type changes
+    useEffect(() => {
+        const loadFields = async () => {
+            if (!settings.ankiNoteType) return;
+
+            const anki = new AnkiConnect(settings.ankiConnectUrl);
+            try {
+                // If "Basic" is selected but not actually in Anki, this might fail or return empty.
+                // But generally users will select a valid type from the list.
+                const fields = await anki.getModelFieldNames(settings.ankiNoteType);
+                setAvailableFields(fields);
+
+                // Auto-select defaults if current settings are not in the new list
+                // or if we want to be smart about "Front" / "Back" detection
+                if (fields.length > 0) {
+                    const updates: any = {};
+                    if (!fields.includes(settings.ankiFrontField)) {
+                        updates.ankiFrontField = fields.find(f => f.toLowerCase().includes('front') || f.toLowerCase().includes('target') || f.toLowerCase().includes('word')) || fields[0];
+                    }
+                    if (!fields.includes(settings.ankiBackField)) {
+                        updates.ankiBackField = fields.find(f => f.toLowerCase().includes('back') || f.toLowerCase().includes('def') || f.toLowerCase().includes('meaning')) || fields[1] || fields[0];
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        updateSettings(updates);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load fields for model", settings.ankiNoteType, e);
+                setAvailableFields([]);
+            }
+        };
+        loadFields();
+    }, [settings.ankiConnectUrl, settings.ankiNoteType]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         updateSettings({ [name]: value });
+    };
+
+    const handleSync = async () => {
+        setSyncing(true);
+        setSyncMsg('Starting sync...');
+        setAnkiWarning(null);
+
+        try {
+            const syncer = new VocabularySyncService(settings);
+            const result = await syncer.sync((msg) => setSyncMsg(msg));
+
+            if (result.errors.length > 0) {
+                setSyncMsg(`Completed with ${result.errors.length} warnings.`);
+            } else {
+                setSyncMsg('Sync completed successfully!');
+            }
+
+            // Refresh models after sync
+            const anki = new AnkiConnect(settings.ankiConnectUrl);
+            const models = await anki.getModelNames();
+            setAvailableModels(models);
+
+        } catch (e: any) {
+            console.error(e);
+            setAnkiWarning(`Sync failed: ${e.message}. Is Anki running with AnkiConnect?`);
+            setSyncMsg('Sync failed');
+        } finally {
+            setSyncing(false);
+        }
     };
 
     const handleProviderUpdate = (providerId: string, field: 'apiKey' | 'model', value: string) => {
@@ -34,7 +117,7 @@ export const SettingsView: React.FC = () => {
                         name="targetLanguage"
                         value={settings.targetLanguage}
                         onChange={handleChange}
-                        className="w-full"
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
                     >
                         <option value="Spanish">Spanish</option>
                         <option value="Korean">Korean</option>
@@ -55,7 +138,7 @@ export const SettingsView: React.FC = () => {
                         name="nativeLanguage"
                         value={settings.nativeLanguage}
                         onChange={handleChange}
-                        className="w-full"
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
                     >
                         <option value="English">English</option>
                         <option value="Spanish">Spanish</option>
@@ -74,7 +157,76 @@ export const SettingsView: React.FC = () => {
                         value={settings.ankiConnectUrl}
                         onChange={handleChange}
                         type="text"
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
                     />
+                </div>
+
+                <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 space-y-4">
+                    <h3 className="font-semibold text-slate-300">Anki Integration</h3>
+
+                    {/* Note Type Selection */}
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm text-slate-400">Note Type</label>
+                            <button
+                                onClick={async () => {
+                                    const anki = new AnkiConnect(settings.ankiConnectUrl);
+                                    try {
+                                        const models = await anki.getModelNames();
+                                        setAvailableModels(models);
+                                        // Trigger field reload if current model is still valid, or just let user re-select
+                                        setSyncMsg(`Loaded ${models.length} types`);
+                                        setTimeout(() => setSyncMsg(''), 2000);
+                                    } catch (e) {
+                                        setAnkiWarning("Failed to connect to Anki.");
+                                    }
+                                }}
+                                className="text-xs text-slate-500 hover:text-violet-400 transition-colors"
+                            >
+                                ↻ Refresh from Anki
+                            </button>
+                        </div>
+                        <select
+                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
+                            value={settings.ankiNoteType}
+                            onChange={(e) => updateSettings({ ankiNoteType: e.target.value })}
+                        >
+                            {availableModels.length === 0 && <option value="Basic">Basic (Default)</option>}
+                            {availableModels.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Field Mapping */}
+                    {availableFields.length > 0 && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-slate-400">Front Field (Word)</label>
+                                <select
+                                    className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
+                                    value={settings.ankiFrontField}
+                                    onChange={(e) => updateSettings({ ankiFrontField: e.target.value })}
+                                >
+                                    {availableFields.map(f => (
+                                        <option key={f} value={f}>{f}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-slate-400">Back Field (Definition)</label>
+                                <select
+                                    className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
+                                    value={settings.ankiBackField}
+                                    onChange={(e) => updateSettings({ ankiBackField: e.target.value })}
+                                >
+                                    {availableFields.map(f => (
+                                        <option key={f} value={f}>{f}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 space-y-4">
@@ -86,29 +238,8 @@ export const SettingsView: React.FC = () => {
                     </p>
                     <button
                         disabled={syncing}
-                        onClick={async () => {
-                            setSyncing(true);
-                            setSyncMsg('Starting sync...');
-                            try {
-                                const { VocabularySyncService } = await import('../services/sync');
-                                const syncer = new VocabularySyncService(settings);
-                                const result = await syncer.sync((msg) => setSyncMsg(msg));
-                                if (result.errors.length > 0) {
-                                    alert(`Synced ${result.added} words. Warnings: \n${result.errors.join('\n')}`);
-                                    setSyncMsg(`Completed with ${result.errors.length} warnings.`);
-                                } else {
-                                    alert(`Synced ${result.added} words from Anki!`);
-                                    setSyncMsg('');
-                                }
-                            } catch (e: any) {
-                                console.error(e);
-                                alert(`Sync failed: ${e.message}`);
-                                setSyncMsg('Sync failed');
-                            } finally {
-                                setSyncing(false);
-                            }
-                        }}
-                        className={`btn-secondary w-full text-sm py-2 ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={handleSync}
+                        className={`w-full bg-violet-600 hover:bg-violet-500 text-white font-medium py-2 px-4 rounded transition-colors ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {syncing ? 'Syncing...' : 'Sync Now'}
                     </button>
@@ -119,15 +250,22 @@ export const SettingsView: React.FC = () => {
                         </div>
                     )}
 
+                    {ankiWarning && (
+                        <div className="text-xs text-red-400 mt-2 p-2 bg-red-400/10 rounded border border-red-400/20">
+                            {ankiWarning}
+                        </div>
+                    )}
+
                     <div className="flex items-center gap-2 mt-4">
                         <input
                             type="checkbox"
                             checked={settings.enableLLMNormalization}
                             onChange={(e) => updateSettings({ enableLLMNormalization: e.target.checked })}
                             id="enableLLM"
+                            className="rounded bg-slate-700 border-slate-600 text-violet-600 focus:ring-violet-500"
                         />
                         <label htmlFor="enableLLM" className="text-sm text-slate-300">
-                            Use AI Normalization (Much slower and costlier, but more accurate dictionary forms)
+                            Use AI Normalization (Slower, costlier, but more accurate)
                         </label>
                     </div>
 
@@ -144,7 +282,7 @@ export const SettingsView: React.FC = () => {
                             name="llmProvider"
                             value={settings.llmProvider}
                             onChange={handleChange}
-                            className="w-full"
+                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
                         >
                             {Object.values(PROVIDERS).map(p => (
                                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -169,6 +307,7 @@ export const SettingsView: React.FC = () => {
                                         onChange={(e) => handleProviderUpdate(activeProvider.id, 'apiKey', e.target.value)}
                                         type="password"
                                         placeholder={activeProvider.placeholderApiKey}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-2">
@@ -176,6 +315,7 @@ export const SettingsView: React.FC = () => {
                                     <select
                                         value={providerSettings.model}
                                         onChange={(e) => handleProviderUpdate(activeProvider.id, 'model', e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-violet-500"
                                     >
                                         {activeProvider.models.map(m => (
                                             <option key={m.id} value={m.id}>{m.name}</option>
@@ -192,9 +332,9 @@ export const SettingsView: React.FC = () => {
 };
 
 const SyncStatsDisplay: React.FC = () => {
-    const [stats, setStats] = React.useState<any>(null);
+    const [stats, setStats] = useState<any>(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const loadStats = async () => {
             const result = await chrome.storage.local.get('syncStats');
             if (result.syncStats) {

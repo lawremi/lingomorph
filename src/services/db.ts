@@ -7,7 +7,7 @@ export interface VocabItem {
     id: number; // Anki Note ID
     word: string;
     lemma: string;
-    status: 'new' | 'learning' | 'review' | 'known';
+    status: 'untracked' | 'new' | 'learning' | 'review' | 'known' | 'suspended' | 'buried';
     definition?: string;
     lastSynced: number;
 }

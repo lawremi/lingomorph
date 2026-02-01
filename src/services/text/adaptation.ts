@@ -36,7 +36,7 @@ export class AdaptationService {
                 return {
                     text: item.token,
                     lemma: item.lemma,
-                    status: knownWord ? knownWord.status : 'new',
+                    status: knownWord ? knownWord.status : 'untracked',
                     definition: item.translation,
                     level: item.level
                 };
