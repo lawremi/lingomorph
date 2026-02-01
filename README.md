@@ -35,8 +35,15 @@ The web offers an infinite supply of text, but finding content that matches your
 *   Google Chrome (or Chromium-based browser)
 *   optional: **Anki** (running locally with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) installed) for vocabulary sync.
 
-### Build Instructions
+### Installation Options
 
+#### Option 1: Download Release (Recommended)
+1.  Go to the [Releases](https://github.com/yourusername/lingomorph/releases) page.
+2.  Download the latest `lingomorph-extension.zip`.
+3.  Unzip the file.
+4.  Proceed to **Loading into Chrome**.
+
+#### Option 2: Build from Source
 **Note**: You only need Node.js if you are building the extension from source.
 
 1.  **Install Node.js (v18+)**
@@ -45,24 +52,22 @@ The web offers an infinite supply of text, but finding content that matches your
     git clone https://github.com/yourusername/lingomorph.git
     cd lingomorph
     ```
-
-2.  **Install dependencies**:
+3.  **Install dependencies**:
     ```bash
     npm install
     ```
-
-3.  **Build the extension**:
+4.  **Build the extension**:
     ```bash
     npm run build
     ```
-    This will generate a `dist` folder containing the extension.
+    This will generate a `dist` folder.
 
 ### Loading into Chrome
 
 1.  Open Chrome and navigate to `chrome://extensions`.
 2.  Enable **Developer mode** (top right toggle).
 3.  Click **Load unpacked**.
-4.  Select the `dist` directory created in the previous step.
+4.  Select the **unzipped release folder** (Option 1) or the `dist` directory (Option 2).
 5.  Pin the Lingomorph icon to your toolbar!
 
 ## ⚙️ Configuration
