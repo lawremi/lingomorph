@@ -35,7 +35,7 @@ export const InteractiveWord: React.FC<InteractiveWordProps> = ({
             case 'untracked': return 'text-slate-400 border-b border-indigo-400/30 hover:bg-white/5'; // Gray with subtle hint
             case 'new': return 'text-blue-400 border-b border-blue-400/30 bg-blue-400/5'; // Anki New
             case 'learning': return 'text-red-400 border-b border-red-400/30 bg-red-400/5'; // Anki Learning
-            case 'review': return 'text-green-400 border-b border-green-400/30 bg-green-400/5'; // Anki Review
+            case 'review': return 'text-slate-200 border-b border-slate-500/30 hover:bg-white/5'; // Anki Review (Subtle)
             case 'suspended': return 'text-yellow-400 border-b border-yellow-400/30 bg-yellow-400/5'; // Anki Suspended
             case 'buried': return 'text-amber-700 border-b border-amber-700/30 bg-amber-700/5'; // Anki Buried
             case 'known': return 'text-slate-200';
