@@ -3,6 +3,8 @@ import { saveVocab, type VocabItem } from './db';
 import { LLMFactory } from './llm/factory';
 import { normalizeWord } from './normalization';
 import type { UserSettings } from '../types';
+import { generateFingerprint } from './text/fingerprint';
+import { saveSettings } from './storage';
 
 export class VocabularySyncService {
     private anki: AnkiConnect;
@@ -71,14 +73,64 @@ export class VocabularySyncService {
             };
         });
 
-        // 5. Heuristic Normalization (Fast)
-        onProgress?.('Applying heuristic normalization...');
+        // 5. Enhance with Card Status
+        // We need to get card IDs first. Notes have 'cards' field which is an array of card IDs.
+        // We'll flatten them to get info.
+        onProgress?.('Fetching card status from Anki...');
+        const allCardIds: number[] = notes.flatMap(n => n.cards);
+
+        let cardStatuses: Record<number, string> = {}; // noteId -> status
+
+        if (allCardIds.length > 0) {
+            const cardsInfo = await this.anki.cardsInfo(allCardIds);
+
+            // Map card info back to notes. A note might have multiple cards.
+            // We'll take the "most active" status (e.g. if one card is learning, the note is learning).
+            // Anki queue: 0=new, 1=learning, 2=review, 3=relearning, -1=suspended, -2=buried, -3=user buried
+
+            // Create a map of cardId -> queue
+            const cardQueueMap = new Map<number, number>();
+            cardsInfo.forEach(c => cardQueueMap.set(c.cardId, c.queue));
+
+            notes.forEach(note => {
+                const noteCardIds = note.cards as number[];
+                let status = 'new'; // Default
+
+                // Prioritize status: learning > review > new > suspended/buried
+                let hasLearning = false;
+                let hasReview = false;
+                let hasNew = false;
+                let hasSuspended = false;
+
+                for (const cardId of noteCardIds) {
+                    const queue = cardQueueMap.get(cardId);
+                    if (queue === 1 || queue === 3) hasLearning = true;
+                    else if (queue === 2) hasReview = true;
+                    else if (queue === 0) hasNew = true;
+                    else if (queue && queue < 0) hasSuspended = true;
+                }
+
+                if (hasLearning) status = 'learning';
+                else if (hasReview) status = 'review';
+                else if (hasNew) status = 'new';
+                else if (hasSuspended) status = 'suspended';
+
+                cardStatuses[note.noteId] = status;
+            });
+        }
+
+        // 6. Apply Status and Heuristic Normalization
+        onProgress?.('Applying normalization and status...');
         const heuristicallyNormalized = rawVocabItems.map(item => {
             const normalized = this.normalizeWithHeuristics(item.word, this.settings.targetLanguage);
+            const status = cardStatuses[item.id] || 'new';
+
+            let newItem = { ...item, status: status as any };
+
             if (normalized !== item.word) {
-                return { ...item, lemma: normalized };
+                newItem.lemma = normalized;
             }
-            return item;
+            return newItem;
         });
 
         let finalItems = heuristicallyNormalized;
@@ -134,6 +186,13 @@ export class VocabularySyncService {
                 }
             });
         }
+
+        // 8. Generate Vocabulary Fingerprint
+        onProgress?.('Generating vocabulary fingerprint...');
+        const fingerprint = await generateFingerprint(this.settings);
+        this.settings.vocabularyFingerprint = fingerprint;
+        await saveSettings(this.settings);
+        onProgress?.('Fingerprint updated.');
 
         return {
             added: finalItems.length,

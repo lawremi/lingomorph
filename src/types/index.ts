@@ -7,6 +7,7 @@ export interface UserSettings {
     ankiNoteType: string;
     ankiFrontField: string;
     ankiBackField: string;
+    vocabularyFingerprint?: string;
     providers: Record<string, ProviderSettings>;
 }
 
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     ankiNoteType: 'Basic',
     ankiFrontField: 'Front',
     ankiBackField: 'Back',
+    vocabularyFingerprint: '',
     providers: {
         google: { apiKey: '', model: 'gemini-3-flash-preview' },
         openai: { apiKey: '', model: 'gpt-5-mini' },

@@ -5,7 +5,6 @@ import type { AdaptedText } from '../types';
 import { AdaptationService } from '../services/text/adaptation';
 import { useSettings } from '../context/SettingsContext';
 import { LLMFactory } from '../services/llm/factory';
-import { getVocabSample } from '../services/db';
 import { Sparkles, Grab, MessageSquare } from 'lucide-react';
 import { AdaptationChat } from './AdaptationChat';
 import type { Message } from '../types';
@@ -83,10 +82,9 @@ export const AdaptationView: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const sample = await getVocabSample(50);
             const provider = LLMFactory.createProvider(settings);
             const service = new AdaptationService(provider, settings);
-            const result = await service.adaptText(inputText, sample);
+            const result = await service.adaptText(inputText);
 
             setHistory(prev => [...prev, result]);
             setInputText(''); // Clear input after successful adaptation

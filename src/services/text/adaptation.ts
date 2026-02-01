@@ -12,11 +12,13 @@ export class AdaptationService {
         this.settings = settings;
     }
 
-    async adaptText(text: string, knownVocabSample: string[] = []): Promise<AdaptedText> {
+    async adaptText(text: string): Promise<AdaptedText> {
+        const fingerprint = this.settings.vocabularyFingerprint || "Beginner (No vocabulary data available)";
+
         const prompt = ADAPTATION_SYSTEM_PROMPT
             .replace('{targetLang}', this.settings.targetLanguage)
             .replace('{nativeLang}', this.settings.nativeLanguage)
-            .replace('{vocabSample}', knownVocabSample.join(', '))
+            .replace('{vocabFingerprint}', fingerprint)
             .replace('{ratio}', '20') // TODO: Make configurable
             .replace('{text}', text);
 

@@ -272,6 +272,20 @@ export const SettingsView: React.FC = () => {
                     <div className="text-xs text-slate-400 border-t border-slate-700/50 pt-3 mt-3">
                         <SyncStatsDisplay />
                     </div>
+
+                    {settings.vocabularyFingerprint && (
+                        <div className="mt-4 pt-3 border-t border-slate-700/50">
+                            <details className="group">
+                                <summary className="flex items-center justify-between cursor-pointer text-xs font-medium text-slate-300 hover:text-white select-none">
+                                    <span>Vocabulary Fingerprint</span>
+                                    <span className="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                                </summary>
+                                <div className="mt-2 p-2 bg-slate-900/50 rounded text-xs text-slate-400 font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                    {settings.vocabularyFingerprint}
+                                </div>
+                            </details>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 space-y-4">

@@ -5,13 +5,13 @@ Your goal is to adapt text to be comprehensible for a learner while introducing 
 Input:
 - Target Language: {targetLang}
 - Native Language: {nativeLang}
-- User's Known Vocabulary (sample): {vocabSample}...
+- User's Proficiency Profile: {vocabFingerprint}
 - Target New Word Ratio: {ratio}%
 - Text to Adapt: {text}
 
 Instructions:
-1. Translate/Rewrite the text into {targetLang}.
-2. Adjust the difficulty so that approximately {ratio}% of the words are likely unknown to the user (based on the provided vocabulary sample or general proficiency implied).
+1. Translate/Rewrite the text into {targetLang} if necessary.
+2. Adjust the difficulty so that approximately {ratio}% of the words are likely unknown to the user (based on the provided User's Proficiency Profile).
 3. Ensure the text flows naturally.
 4. Analyze the resulting text and provide a list of all words with their lemmas.
    - Identify the canonical dictionary form (lemma). Omit spaces if they are not required in the standard dictionary form (e.g., for Korean).

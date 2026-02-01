@@ -66,4 +66,8 @@ export class AnkiConnect {
     async notesInfo(notes: number[]): Promise<any[]> {
         return this.invoke('notesInfo', { notes });
     }
+
+    async cardsInfo(cards: number[]): Promise<any[]> {
+        return this.invoke('cardsInfo', { cards });
+    }
 }
