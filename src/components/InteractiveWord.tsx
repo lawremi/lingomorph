@@ -11,6 +11,7 @@ interface InteractiveWordProps {
     onHover?: (active: boolean) => void;
     onClick: (word: string, lemma: string) => void;
     onAddAnki?: (lemma: string, definition?: string) => void;
+    hasVocab?: boolean;
 }
 
 export const InteractiveWord: React.FC<InteractiveWordProps> = ({
@@ -22,7 +23,8 @@ export const InteractiveWord: React.FC<InteractiveWordProps> = ({
     isActive = false,
     onHover,
     onClick,
-    onAddAnki
+    onAddAnki,
+    hasVocab = true
 }) => {
     // Local state fallback if not controlled (backward compat)
     const [internalActive, setInternalActive] = React.useState(false);
@@ -31,6 +33,9 @@ export const InteractiveWord: React.FC<InteractiveWordProps> = ({
     const showTooltip = onHover ? isActive : internalActive;
 
     const getStatusColor = () => {
+        // If not synced yet, everything looks "normal" (white/slate-200)
+        if (!hasVocab && status === 'untracked') return 'text-slate-200';
+
         switch (status) {
             case 'untracked': return 'text-slate-400 border-b border-indigo-400/30 hover:bg-white/5'; // Gray with subtle hint
             case 'new': return 'text-blue-400 border-b border-blue-400/30 bg-blue-400/5'; // Anki New
@@ -85,7 +90,7 @@ export const InteractiveWord: React.FC<InteractiveWordProps> = ({
 
                     {definition && <div className="text-slate-400 max-w-[200px] whitespace-normal break-words">{definition}</div>}
 
-                    {status === 'untracked' && onAddAnki && (
+                    {status === 'untracked' && onAddAnki && hasVocab && (
                         <button
                             className="mt-1 w-full text-[10px] bg-violet-600 hover:bg-violet-500 text-white px-2 py-1 rounded transition-colors flex items-center justify-center gap-1 pointer-events-auto"
                             onClick={(e) => {

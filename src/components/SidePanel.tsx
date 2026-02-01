@@ -12,6 +12,9 @@ export const SidePanel: React.FC = () => {
     const { settings } = useSettings();
     const [progress, setProgress] = useState({ date: '', count: 0 });
 
+    const [syncing, setSyncing] = useState(false);
+    const { updateSettings } = useSettings();
+
     useEffect(() => {
         const loadProgress = async () => {
             const today = new Date().toDateString();
@@ -26,6 +29,36 @@ export const SidePanel: React.FC = () => {
         };
         loadProgress();
 
+        // Auto-Sync Logic
+        const checkAutoSync = async () => {
+            if (settings.autoSync) {
+                const storage = await chrome.storage.local.get('syncStats');
+                const syncStats = storage.syncStats as { lastSynced: number } | undefined;
+                const lastSynced = syncStats?.lastSynced || 0;
+                const oneDay = 24 * 60 * 60 * 1000;
+
+                // If never synced or > 24h ago, try to sync
+                if (Date.now() - lastSynced > oneDay) {
+                    console.log("Triggering Auto-Sync...");
+                    setSyncing(true);
+                    try {
+                        const { VocabularySyncService } = await import('../services/sync');
+                        const syncer = new VocabularySyncService(settings);
+                        await syncer.sync();
+                        // Clear any previous error on success
+                        updateSettings({ lastSyncError: undefined });
+                    } catch (e: any) {
+                        console.error("Auto-sync failed:", e);
+                        updateSettings({ lastSyncError: e.message || "Auto-sync failed" });
+                    } finally {
+                        setSyncing(false);
+                    }
+                }
+            }
+        };
+        // Small delay to ensure settings are loaded
+        const timer = setTimeout(checkAutoSync, 1000);
+
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
             if (changes.dailyProgress?.newValue) {
                 const newData = changes.dailyProgress.newValue as { date: string, count: number };
@@ -39,7 +72,10 @@ export const SidePanel: React.FC = () => {
             }
         };
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+        return () => {
+            chrome.storage.onChanged.removeListener(listener);
+            clearTimeout(timer);
+        };
     }, []);
 
     return (
@@ -52,6 +88,7 @@ export const SidePanel: React.FC = () => {
                         <h1 className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-500">
                             Lingomorph
                         </h1>
+                        {syncing && <span className="text-[10px] text-violet-400 animate-pulse">Syncing...</span>}
                     </div>
                 </div>
                 <ProgressBar current={progress.count} max={settings.dailyGoal} label="Daily Goal" />

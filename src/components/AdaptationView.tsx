@@ -15,6 +15,17 @@ export const AdaptationView: React.FC = () => {
     const [history, setHistory] = useState<AdaptedText[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [hasVocab, setHasVocab] = useState(false);
+
+    // Check for vocab existence
+    React.useEffect(() => {
+        chrome.storage.local.get('syncStats', (result) => {
+            const stats = result.syncStats as { totalWords: number } | undefined;
+            if (stats && stats.totalWords > 0) {
+                setHasVocab(true);
+            }
+        });
+    }, []);
 
     // Tooltip State Management
     const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
@@ -298,6 +309,7 @@ Answer the user's question about the text, vocabulary, grammar, or culture. Keep
                                             onHover={(active) => handleWordHover(wordId, active)}
                                             onClick={handleWordClick}
                                             onAddAnki={handleAddAnki}
+                                            hasVocab={hasVocab}
                                         />
                                     );
                                 })}

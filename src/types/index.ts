@@ -9,6 +9,8 @@ export interface UserSettings {
     ankiBackField: string;
     vocabularyFingerprint?: string;
     dailyGoal: number;
+    autoSync: boolean;
+    lastSyncError?: string;
     providers: Record<string, ProviderSettings>;
 }
 
@@ -28,6 +30,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     ankiBackField: 'Back',
     vocabularyFingerprint: '',
     dailyGoal: 10,
+    autoSync: true,
     providers: {
         google: { apiKey: '', model: 'gemini-3-flash-preview' },
         openai: { apiKey: '', model: 'gpt-5-mini' },

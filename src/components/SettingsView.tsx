@@ -256,17 +256,44 @@ export const SettingsView: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2 mt-4">
-                        <input
-                            type="checkbox"
-                            checked={settings.enableLLMNormalization}
-                            onChange={(e) => updateSettings({ enableLLMNormalization: e.target.checked })}
-                            id="enableLLM"
-                            className="rounded bg-slate-700 border-slate-600 text-violet-600 focus:ring-violet-500"
-                        />
-                        <label htmlFor="enableLLM" className="text-sm text-slate-300">
-                            Use AI Normalization (Slower, costlier, but more accurate)
-                        </label>
+                    <div className="flex flex-col gap-2 mt-4">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={settings.autoSync}
+                                onChange={(e) => updateSettings({ autoSync: e.target.checked })}
+                                id="autoSync"
+                                className="rounded bg-slate-700 border-slate-600 text-violet-600 focus:ring-violet-500"
+                            />
+                            <label htmlFor="autoSync" className="text-sm text-slate-300">
+                                Auto-sync daily
+                            </label>
+                            {settings.lastSyncError && (
+                                <span className="text-xs text-red-400 bg-red-400/10 px-2 py-0.5 rounded border border-red-400/20 flex items-center gap-1">
+                                    Error
+                                </span>
+                            )}
+                        </div>
+                        {settings.lastSyncError && (
+                            <div className="text-xs text-red-300 pl-6 space-y-1">
+                                <p>{settings.lastSyncError}</p>
+                                <p>
+                                    Make sure <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">AnkiConnect</a> is installed and Anki is running.
+                                </p>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                            <input
+                                type="checkbox"
+                                checked={settings.enableLLMNormalization}
+                                onChange={(e) => updateSettings({ enableLLMNormalization: e.target.checked })}
+                                id="enableLLM"
+                                className="rounded bg-slate-700 border-slate-600 text-violet-600 focus:ring-violet-500"
+                            />
+                            <label htmlFor="enableLLM" className="text-sm text-slate-300">
+                                Use AI Normalization (Slower, costlier, but more accurate)
+                            </label>
+                        </div>
                     </div>
 
 
