@@ -88,6 +88,19 @@ export const AdaptationView: React.FC = () => {
 
             setHistory(prev => [...prev, result]);
             setInputText(''); // Clear input after successful adaptation
+
+            // Increment daily progress (Adaptations goal)
+            const today = new Date().toDateString();
+            const storage = await chrome.storage.local.get('dailyProgress');
+            let progress = storage.dailyProgress as { date: string, count: number } | undefined;
+
+            if (!progress || progress.date !== today) {
+                progress = { date: today, count: 0 };
+            }
+
+            progress.count += 1;
+            await chrome.storage.local.set({ dailyProgress: progress });
+
         } catch (e: any) {
             console.error(e);
             let msg = e.message || 'Adaptation failed. Unknown error.';

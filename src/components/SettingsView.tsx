@@ -269,7 +269,9 @@ export const SettingsView: React.FC = () => {
                         </label>
                     </div>
 
-                    <div className="text-xs text-slate-400 border-t border-slate-700/50 pt-3 mt-3">
+
+
+                    <div className="text-xs text-slate-400 mt-3">
                         <SyncStatsDisplay />
                     </div>
 
@@ -286,6 +288,21 @@ export const SettingsView: React.FC = () => {
                             </details>
                         </div>
                     )}
+                </div>
+
+                <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 space-y-4">
+                    <h3 className="font-semibold text-slate-300">Daily Goals</h3>
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm text-slate-300">Target Adaptations</label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            className="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 text-right focus:outline-none focus:border-violet-500"
+                            value={settings.dailyGoal}
+                            onChange={(e) => updateSettings({ dailyGoal: parseInt(e.target.value) || 10 })}
+                        />
+                    </div>
                 </div>
 
                 <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 space-y-4">

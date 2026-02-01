@@ -1,23 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Book } from 'lucide-react';
 import { SettingsView } from './SettingsView';
 import { AdaptationView } from './AdaptationView';
+import { ProgressBar } from './ProgressBar';
+import { useSettings } from '../context/SettingsContext';
 
 type Tab = 'adapt' | 'settings';
 
 export const SidePanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('adapt');
+    const { settings } = useSettings();
+    const [progress, setProgress] = useState({ date: '', count: 0 });
+
+    useEffect(() => {
+        const loadProgress = async () => {
+            const today = new Date().toDateString();
+            const result = await chrome.storage.local.get('dailyProgress');
+            const data = result.dailyProgress as { date: string, count: number } | undefined;
+
+            if (data && data.date === today) {
+                setProgress(data);
+            } else {
+                setProgress({ date: today, count: 0 });
+            }
+        };
+        loadProgress();
+
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+            if (changes.dailyProgress?.newValue) {
+                const newData = changes.dailyProgress.newValue as { date: string, count: number };
+                // If date changed in background/storage
+                const today = new Date().toDateString();
+                if (newData.date === today) {
+                    setProgress(newData);
+                } else {
+                    setProgress({ date: today, count: 0 });
+                }
+            }
+        };
+        chrome.storage.onChanged.addListener(listener);
+        return () => chrome.storage.onChanged.removeListener(listener);
+    }, []);
 
     return (
         <div className="flex flex-col h-screen bg-slate-900 text-slate-100">
             {/* Header */}
-            <header className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
-                <div className="flex items-center gap-2">
-                    <img src="/icon.png" alt="Logo" className="w-6 h-6" />
-                    <h1 className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-500">
-                        Lingomorph
-                    </h1>
+            <header className="flex flex-col gap-2 p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <img src="/icon.png" alt="Logo" className="w-6 h-6" />
+                        <h1 className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-500">
+                            Lingomorph
+                        </h1>
+                    </div>
                 </div>
+                <ProgressBar current={progress.count} max={settings.dailyGoal} label="Daily Goal" />
             </header>
 
             {/* Main Content */}
