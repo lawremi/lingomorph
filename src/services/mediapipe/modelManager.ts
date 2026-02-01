@@ -54,7 +54,7 @@ export class ModelManager {
         const response = await fetch(url, { headers });
 
         if (response.status === 401 || response.status === 403) {
-            throw new Error('Access denied. Please check your Hugging Face Token and ensure you have accepted the model license at https://huggingface.co/litert-community/Gemma3-4B-IT');
+            throw new Error('Access denied. Please check your Hugging Face Token and ensure you have accepted the model license at https://huggingface.co/litert-community/Gemma3-12B-IT');
         }
 
         if (!response.ok) {
