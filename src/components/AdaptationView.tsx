@@ -17,6 +17,15 @@ export const AdaptationView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [hasVocab, setHasVocab] = useState(false);
 
+    const bottomRef = React.useRef<HTMLDivElement>(null);
+
+    // Scroll to bottom on history update
+    React.useEffect(() => {
+        if (history.length > 0) {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [history]);
+
     // Check for vocab existence
     React.useEffect(() => {
         chrome.storage.local.get('syncStats', (result) => {
@@ -365,6 +374,9 @@ Answer the user's question about the text, vocabulary, grammar, or culture. Keep
                         )}
                     </div>
                 ))}
+
+                {/* Dummy element for auto-scrolling */}
+                <div ref={bottomRef} />
             </div>
 
             {/* Fixed Input Area at Bottom */}
