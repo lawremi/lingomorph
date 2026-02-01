@@ -38,6 +38,13 @@ export interface SyncStats {
     totalWords: number;
 }
 
+export interface Message {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+}
+
 export interface AdaptedText {
     original: string;
     adapted: string;
@@ -48,4 +55,5 @@ export interface AdaptedText {
         level?: string; // e.g., 'A1', 'B2', 'High', 'Low'
         status: WordStatus['status'];
     }[];
+    chatHistory?: Message[];
 }

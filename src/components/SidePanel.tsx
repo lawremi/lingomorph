@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Settings, MessageSquare, Book } from 'lucide-react';
+import { Settings, Book } from 'lucide-react';
 import { SettingsView } from './SettingsView';
-import { ChatView } from './ChatView';
 import { AdaptationView } from './AdaptationView';
 
-type Tab = 'chat' | 'adapt' | 'settings';
+type Tab = 'adapt' | 'settings';
 
 export const SidePanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('adapt');
@@ -23,21 +22,12 @@ export const SidePanel: React.FC = () => {
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto custom-scrollbar">
-                {activeTab === 'chat' && <ChatView />}
                 {activeTab === 'adapt' && <AdaptationView />}
                 {activeTab === 'settings' && <SettingsView />}
             </main>
 
             {/* Basic Tab Bar */}
             <nav className="flex items-center justify-around p-2 border-t border-slate-800 bg-slate-900">
-                <button
-                    onClick={() => setActiveTab('chat')}
-                    className={`p-2 rounded-lg transition-colors ${activeTab === 'chat' ? 'text-violet-400 bg-violet-400/10' : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                    title="Chat Tutor"
-                >
-                    <MessageSquare size={20} />
-                </button>
                 <button
                     onClick={() => setActiveTab('adapt')}
                     className={`p-2 rounded-lg transition-colors ${activeTab === 'adapt' ? 'text-violet-400 bg-violet-400/10' : 'text-slate-400 hover:text-slate-200'

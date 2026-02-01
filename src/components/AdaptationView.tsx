@@ -6,7 +6,9 @@ import { AdaptationService } from '../services/text/adaptation';
 import { useSettings } from '../context/SettingsContext';
 import { LLMFactory } from '../services/llm/factory';
 import { getVocabSample } from '../services/db';
-import { Sparkles, Grab } from 'lucide-react';
+import { Sparkles, Grab, MessageSquare } from 'lucide-react';
+import { AdaptationChat } from './AdaptationChat';
+import type { Message } from '../types';
 
 export const AdaptationView: React.FC = () => {
     const { settings } = useSettings();
@@ -18,6 +20,10 @@ export const AdaptationView: React.FC = () => {
     // Tooltip State Management
     const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
     const tooltipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Chat State
+    const [openChatId, setOpenChatId] = useState<number | null>(null);
+    const [chatLoading, setChatLoading] = useState(false);
 
     const handleWordHover = (id: string, active: boolean) => {
         if (active) {
@@ -122,6 +128,76 @@ export const AdaptationView: React.FC = () => {
         }
     };
 
+    const handleChatSend = async (msg: string, index: number) => {
+        if (chatLoading) return;
+
+        const currentItem = history[index];
+        const newMsg: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: msg,
+            timestamp: Date.now()
+        };
+
+        // Optimistic update
+        const updatedHistory = [...history];
+        updatedHistory[index] = {
+            ...currentItem,
+            chatHistory: [...(currentItem.chatHistory || []), newMsg]
+        };
+        setHistory(updatedHistory);
+        setChatLoading(true);
+
+        try {
+            const provider = LLMFactory.createProvider(settings);
+            // Construct context-aware prompt
+            const systemContext = `
+You are a helpful language tutor discussing a specific text adaptation.
+Original Text: "${currentItem.original}"
+Adapted Text: "${currentItem.adapted}"
+Target Language: ${settings.targetLanguage}
+User's Native Language: ${settings.nativeLanguage}
+
+Answer the user's question about the text, vocabulary, grammar, or culture. Keep answers concise and helpful.
+`;
+
+            const prompt = `${systemContext}\n\nUser Question: ${msg}`;
+            const response = await provider.complete(prompt);
+
+            const botMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: response.text,
+                timestamp: Date.now()
+            };
+
+            const finalHistory = [...updatedHistory];
+            finalHistory[index] = {
+                ...finalHistory[index],
+                chatHistory: [...(finalHistory[index].chatHistory || []), botMsg]
+            };
+            setHistory(finalHistory);
+
+        } catch (e: any) {
+            console.error('Chat failed:', e);
+            // Add error message
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: `Error: ${e.message || 'Failed to get response'}`,
+                timestamp: Date.now()
+            };
+            const errorHistory = [...updatedHistory];
+            errorHistory[index] = {
+                ...errorHistory[index],
+                chatHistory: [...(errorHistory[index].chatHistory || []), errorMsg]
+            };
+            setHistory(errorHistory);
+        } finally {
+            setChatLoading(false);
+        }
+    };
+
     const handleWordClick = (word: string, lemma: string) => {
         console.log('Clicked:', word, lemma);
     };
@@ -179,12 +255,33 @@ export const AdaptationView: React.FC = () => {
                             </div>
                         </div>
 
-                        <details className="text-xs text-slate-500">
-                            <summary className="cursor-pointer hover:text-slate-400 select-none">Show Original</summary>
-                            <p className="mt-2 italic p-2 bg-slate-800/30 rounded">
-                                {item.original}
-                            </p>
-                        </details>
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                            <details className="flex-1">
+                                <summary className="cursor-pointer hover:text-slate-400 select-none">Show Original</summary>
+                                <p className="mt-2 italic p-2 bg-slate-800/30 rounded">
+                                    {item.original}
+                                </p>
+                            </details>
+
+                            <button
+                                onClick={() => setOpenChatId(openChatId === idx ? null : idx)}
+                                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors ${openChatId === idx
+                                    ? 'text-violet-300 bg-violet-500/20'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                    }`}
+                            >
+                                <MessageSquare size={14} />
+                                {openChatId === idx ? 'Close Chat' : 'Ask AI'}
+                            </button>
+                        </div>
+
+                        {openChatId === idx && (
+                            <AdaptationChat
+                                messages={item.chatHistory || []}
+                                onSend={(msg) => handleChatSend(msg, idx)}
+                                isLoading={chatLoading}
+                            />
+                        )}
                     </div>
                 ))}
             </div>

@@ -28,6 +28,8 @@
 - [x] Enhance Adaptation Estimates (Frequency/Level + Lemma refinements) <!-- id: 19 -->
 - [x] Refactor Adaptation View to "Notebook" Style (Persistent History) <!-- id: 20 -->
 - [x] Implement "Add to Anki" Feature for New Words <!-- id: 21 -->
+- [x] Implement Per-Adaptation Chat Thread ("Ask AI") <!-- id: 22 -->
+- [x] Remove Standalone Chat View <!-- id: 23 -->
 
 ## Verification
 - [x] Verify End-to-End flow with mocked LLM/Anki <!-- id: 15 -->
